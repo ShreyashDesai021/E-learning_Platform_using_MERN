@@ -1,12 +1,21 @@
+// client/src/features/api/purchaseApi.js
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-const COURSE_PURCHASE_API = "http://localhost:8080/api/v1/purchase";
+const BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5000/api/v1";
+const COURSE_PURCHASE_API = `${BASE}/purchase`;
 
 export const purchaseApi = createApi({
   reducerPath: "purchaseApi",
   baseQuery: fetchBaseQuery({
     baseUrl: COURSE_PURCHASE_API,
     credentials: "include",
+    prepareHeaders: (headers) => {
+      try {
+        const token = localStorage.getItem("token");
+        if (token) headers.set("Authorization", `Bearer ${token}`);
+      } catch (err) {}
+      return headers;
+    },
   }),
   endpoints: (builder) => ({
     createCheckoutSession: builder.mutation({

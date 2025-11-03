@@ -1,3 +1,4 @@
+// client/src/pages/admin/course/CourseTab.jsx
 import RichTextEditor from "@/components/RichTextEditor";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,7 +30,6 @@ import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 
 const CourseTab = () => {
-  
   const [input, setInput] = useState({
     courseTitle: "",
     subTitle: "",
@@ -42,25 +42,27 @@ const CourseTab = () => {
 
   const params = useParams();
   const courseId = params.courseId;
-  const { data: courseByIdData, isLoading: courseByIdLoading , refetch} =
-    useGetCourseByIdQuery(courseId);
+  const { data: courseByIdData, isLoading: courseByIdLoading, refetch } =
+    useGetCourseByIdQuery(courseId, { skip: !courseId });
 
-    const [publishCourse, {}] = usePublishCourseMutation();
- 
+  // support both shapes: either { course: {...} } or direct course object
+  const courseData = courseByIdData?.course ?? courseByIdData ?? null;
+
+  const [publishCourse] = usePublishCourseMutation();
+
   useEffect(() => {
-    if (courseByIdData?.course) { 
-        const course = courseByIdData?.course;
+    if (courseData) {
       setInput({
-        courseTitle: course.courseTitle,
-        subTitle: course.subTitle,
-        description: course.description,
-        category: course.category,
-        courseLevel: course.courseLevel,
-        coursePrice: course.coursePrice,
+        courseTitle: courseData.courseTitle ?? courseData.title ?? "",
+        subTitle: courseData.subTitle ?? "",
+        description: courseData.description ?? "",
+        category: courseData.category ?? "",
+        courseLevel: courseData.courseLevel ?? "",
+        coursePrice: courseData.coursePrice ?? courseData.price ?? "",
         courseThumbnail: "",
       });
     }
-  }, [courseByIdData]);
+  }, [courseData]);
 
   const [previewThumbnail, setPreviewThumbnail] = useState("");
   const navigate = useNavigate();
@@ -91,41 +93,54 @@ const CourseTab = () => {
   };
 
   const updateCourseHandler = async () => {
-    const formData = new FormData();
-    formData.append("courseTitle", input.courseTitle);
-    formData.append("subTitle", input.subTitle);
-    formData.append("description", input.description);
-    formData.append("category", input.category);
-    formData.append("courseLevel", input.courseLevel);
-    formData.append("coursePrice", input.coursePrice);
-    formData.append("courseThumbnail", input.courseThumbnail);
+    try {
+      const formData = new FormData();
+      formData.append("courseTitle", input.courseTitle);
+      formData.append("subTitle", input.subTitle);
+      formData.append("description", input.description);
+      formData.append("category", input.category);
+      formData.append("courseLevel", input.courseLevel);
+      formData.append("coursePrice", input.coursePrice);
+      formData.append("courseThumbnail", input.courseThumbnail);
 
-    await editCourse({ formData, courseId });
+      await editCourse({ formData, courseId }).unwrap();
+      // success handled by isSuccess -> toast below
+    } catch (err) {
+      console.error("Edit course error:", err);
+      toast.error(err?.data?.message || "Failed to update course");
+    }
   };
 
   const publishStatusHandler = async (action) => {
     try {
-      const response = await publishCourse({courseId, query:action});
-      if(response.data){
-        refetch();
-        toast.success(response.data.message);
+      const response = await publishCourse({ courseId, query: action }).unwrap();
+      if (response) {
+        // refetch course to reflect new status
+        await refetch();
+        toast.success(response?.message || "Course publish status updated");
       }
-    } catch (error) {
-      toast.error("Failed to publish or unpublish course");
+    } catch (err) {
+      console.error("Publish error:", err);
+      toast.error(err?.data?.message || "Failed to update publish status");
     }
-  }
+  };
 
   useEffect(() => {
-    if (isSuccess) {
-      toast.success(data.message || "Course update.");
+    if (isSuccess && data) {
+      toast.success(data.message || "Course updated.");
     }
     if (error) {
-      toast.error(error.data.message || "Failed to update course");
+      toast.error(error.data?.message || "Failed to update course");
     }
-  }, [isSuccess, error]);
+  }, [isSuccess, error, data]);
 
-  if(courseByIdLoading) return <h1>Loading...</h1>
- 
+  if (courseByIdLoading) return <h1>Loading...</h1>;
+
+  const lectureCount = Array.isArray(courseData?.lectures)
+    ? courseData.lectures.length
+    : 0;
+  const isPublished = !!courseData?.isPublished;
+
   return (
     <Card>
       <CardHeader className="flex flex-row justify-between">
@@ -136,8 +151,14 @@ const CourseTab = () => {
           </CardDescription>
         </div>
         <div className="space-x-2">
-          <Button disabled={courseByIdData?.course.lectures.length === 0} variant="outline" onClick={()=> publishStatusHandler(courseByIdData?.course.isPublished ? "false" : "true")}>
-            {courseByIdData?.course.isPublished ? "Unpublished" : "Publish"}
+          <Button
+            disabled={lectureCount === 0}
+            variant="outline"
+            onClick={() =>
+              publishStatusHandler(isPublished ? "false" : "true")
+            }
+          >
+            {isPublished ? "Unpublish" : "Publish"}
           </Button>
           <Button>Remove Course</Button>
         </div>
@@ -172,7 +193,7 @@ const CourseTab = () => {
             <div>
               <Label>Category</Label>
               <Select
-                defaultValue={input.category}
+                value={input.category}
                 onValueChange={selectCategory}
               >
                 <SelectTrigger className="w-[180px]">
@@ -204,7 +225,7 @@ const CourseTab = () => {
             <div>
               <Label>Course Level</Label>
               <Select
-                defaultValue={input.courseLevel}
+                value={input.courseLevel}
                 onValueChange={selectCourseLevel}
               >
                 <SelectTrigger className="w-[180px]">

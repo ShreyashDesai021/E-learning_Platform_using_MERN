@@ -1,3 +1,5 @@
+//client/src/App.jsx
+
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import "./App.css";
 import Login from "./pages/Login";
@@ -23,6 +25,11 @@ import {
 } from "./components/ProtectedRoutes";
 import PurchaseCourseProtectedRoute from "./components/PurchaseCourseProtectedRoute";
 import { ThemeProvider } from "./components/ThemeProvider";
+
+// 🆕 newly added pages for test and certificate
+import TestPage from "./pages/student/TestPage";
+import CertificatePage from "./pages/student/CertificatePage";
+import UploadTest from "./pages/admin/course/UploadTest";
 
 const appRouter = createBrowserRouter([
   {
@@ -83,13 +90,33 @@ const appRouter = createBrowserRouter([
         element: (
           <ProtectedRoute>
             <PurchaseCourseProtectedRoute>
-            <CourseProgress />
+              <CourseProgress />
             </PurchaseCourseProtectedRoute>
           </ProtectedRoute>
         ),
       },
 
-      // admin routes start from here
+      // 🆕 student test routes
+      {
+        path: "course/:courseId/test",
+        element: (
+          <ProtectedRoute>
+            <PurchaseCourseProtectedRoute>
+              <TestPage />
+            </PurchaseCourseProtectedRoute>
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: "certificate/:attemptId",
+        element: (
+          <ProtectedRoute>
+            <CertificatePage />
+          </ProtectedRoute>
+        ),
+      },
+
+      // 🧑‍🏫 admin routes start from here
       {
         path: "admin",
         element: (
@@ -122,6 +149,12 @@ const appRouter = createBrowserRouter([
             path: "course/:courseId/lecture/:lectureId",
             element: <EditLecture />,
           },
+
+          // 🆕 admin upload test route
+          {
+            path: "course/:courseId/upload-test",
+            element: <UploadTest />,
+          },
         ],
       },
     ],
@@ -132,7 +165,17 @@ function App() {
   return (
     <main>
       <ThemeProvider>
-      <RouterProvider router={appRouter} />
+        <RouterProvider
+          router={appRouter}
+          future={{
+            v7_startTransition: true,
+            v7_relativeSplatPath: true,
+            v7_fetcherPersist: true,
+            v7_normalizeFormMethod: true,
+            v7_partialHydration: true,
+            v7_skipActionErrorRevalidation: true,
+          }}
+        />
       </ThemeProvider>
     </main>
   );

@@ -1,3 +1,4 @@
+//server/models/coursePurchase.model.js
 import mongoose from "mongoose";
 const coursePurchaseSchema = new mongoose.Schema({
     courseId:{
@@ -17,7 +18,7 @@ const coursePurchaseSchema = new mongoose.Schema({
     status:{
         type:String,
         enum:['pending', 'completed', 'failed'],
-        default:'pending'
+        default:'completed'
     },
     paymentId:{
         type:String,

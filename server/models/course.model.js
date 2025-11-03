@@ -1,3 +1,5 @@
+//server/models/course.model.js
+
 import mongoose from "mongoose"
 
 const courseSchema = new mongoose.Schema({

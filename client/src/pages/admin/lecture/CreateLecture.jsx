@@ -1,3 +1,4 @@
+// client/src/pages/admin/lecture/CreateLecture.jsx
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,34 +26,51 @@ const CreateLecture = () => {
     isLoading: lectureLoading,
     isError: lectureError,
     refetch,
-  } = useGetCourseLectureQuery(courseId);
+  } = useGetCourseLectureQuery(courseId, { skip: !courseId });
 
   const createLectureHandler = async () => {
-    await createLecture({ lectureTitle, courseId });
+    if (!lectureTitle.trim()) {
+      toast.error("Please enter a lecture title.");
+      return;
+    }
+    try {
+      const res = await createLecture({ lectureTitle: lectureTitle.trim(), courseId }).unwrap();
+      // try to extract created lecture id from response
+      const createdLectureId =
+        res?.lecture?._id ?? res?._id ?? res?.data?.lecture?._id ?? null;
+
+      toast.success(res?.message || "Lecture created.");
+      if (createdLectureId) {
+        navigate(`/admin/course/${courseId}/lecture/${createdLectureId}`);
+      } else {
+        // fallback: refetch list and clear input
+        refetch();
+        setLectureTitle("");
+      }
+    } catch (err) {
+      console.error("Create lecture error:", err);
+      toast.error(err?.data?.message || "Failed to create lecture.");
+    }
   };
 
   useEffect(() => {
-    if (isSuccess) {
+    if (isSuccess && data && !data?.lecture && !data?._id) {
+      // if server didn't return id, just refetch
       refetch();
-      toast.success(data.message);
     }
     if (error) {
-      toast.error(error.data.message);
+      toast.error(error?.data?.message || "Failed to create lecture.");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSuccess, error]);
-
-  console.log(lectureData);
 
   return (
     <div className="flex-1 mx-10">
       <div className="mb-4">
         <h1 className="font-bold text-xl">
-          Let's add lectures, add some basic details for your new lecture
+          Let's add lectures — add some basic details for your new lecture
         </h1>
-        <p className="text-sm">
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Possimus,
-          laborum!
-        </p>
+        <p className="text-sm">Provide a short title and create the lecture.</p>
       </div>
       <div className="space-y-4">
         <div>
@@ -61,7 +79,8 @@ const CreateLecture = () => {
             type="text"
             value={lectureTitle}
             onChange={(e) => setLectureTitle(e.target.value)}
-            placeholder="Your Title Name"
+            placeholder="Your Lecture Title"
+            required
           />
         </div>
         <div className="flex items-center gap-2">
@@ -82,15 +101,16 @@ const CreateLecture = () => {
             )}
           </Button>
         </div>
+
         <div className="mt-10">
           {lectureLoading ? (
             <p>Loading lectures...</p>
           ) : lectureError ? (
             <p>Failed to load lectures.</p>
-          ) : lectureData.lectures.length === 0 ? (
-            <p>No lectures availabe</p>
+          ) : !lectureData || (Array.isArray(lectureData?.lectures) && lectureData.lectures.length === 0) ? (
+            <p>No lectures available</p>
           ) : (
-            lectureData.lectures.map((lecture, index) => (
+            (lectureData.lectures ?? []).map((lecture, index) => (
               <Lecture
                 key={lecture._id}
                 lecture={lecture}

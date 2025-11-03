@@ -1,3 +1,4 @@
+//client/src/pages/student/Courses.jsx
 import { Skeleton } from "@/components/ui/skeleton";
 import React from "react";
 import Course from "./Course";

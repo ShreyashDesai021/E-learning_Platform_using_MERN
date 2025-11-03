@@ -1,3 +1,4 @@
+// client/src/pages/admin/course/AddCourse.jsx
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,16 +31,29 @@ const AddCourse = () => {
   };
 
   const createCourseHandler = async () => {
-    await createCourse({ courseTitle, category });
+    if (!courseTitle.trim()) {
+      toast.error("Please provide a course title.");
+      return;
+    }
+    try {
+      await createCourse({ courseTitle: courseTitle.trim(), category }).unwrap();
+      // unwrap will throw if error, so success path continues
+    } catch (err) {
+      console.error("Create course error:", err);
+      toast.error(err?.data?.message || "Failed to create course.");
+    }
   };
 
-  // for displaying toast
-  useEffect(()=>{
-    if(isSuccess){
-        toast.success(data?.message || "Course created.");
-        navigate("/admin/course");
+  // for displaying toast and navigation
+  useEffect(() => {
+    if (isSuccess && data) {
+      toast.success(data?.message || "Course created.");
+      navigate("/admin/course");
+    } else if (error) {
+      toast.error(error?.data?.message || "Failed to create course.");
     }
-  },[isSuccess, error])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSuccess, error]);
 
   return (
     <div className="flex-1 mx-10">
@@ -48,8 +62,7 @@ const AddCourse = () => {
           Lets add course, add some basic course details for your new course
         </h1>
         <p className="text-sm">
-          Lorem, ipsum dolor sit amet consectetur adipisicing elit. Possimus,
-          laborum!
+          Give your course a good title and choose a category.
         </p>
       </div>
       <div className="space-y-4">
@@ -60,6 +73,7 @@ const AddCourse = () => {
             value={courseTitle}
             onChange={(e) => setCourseTitle(e.target.value)}
             placeholder="Your Course Name"
+            required
           />
         </div>
         <div>
@@ -95,7 +109,10 @@ const AddCourse = () => {
           <Button variant="outline" onClick={() => navigate("/admin/course")}>
             Back
           </Button>
-          <Button disabled={isLoading} onClick={createCourseHandler}>
+          <Button
+            disabled={isLoading || !courseTitle.trim()}
+            onClick={createCourseHandler}
+          >
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />

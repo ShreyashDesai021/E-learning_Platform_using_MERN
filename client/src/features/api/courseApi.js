@@ -1,6 +1,8 @@
+// client/src/features/api/courseApi.js
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
-const COURSE_API = "http://localhost:8080/api/v1/course";
+const BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:5000/api/v1";
+const COURSE_API = `${BASE}/course`; // e.g. http://localhost:5000/api/v1/course
 
 export const courseApi = createApi({
   reducerPath: "courseApi",
@@ -8,6 +10,13 @@ export const courseApi = createApi({
   baseQuery: fetchBaseQuery({
     baseUrl: COURSE_API,
     credentials: "include",
+    prepareHeaders: (headers) => {
+      try {
+        const token = localStorage.getItem("token");
+        if (token) headers.set("Authorization", `Bearer ${token}`);
+      } catch (err) {}
+      return headers;
+    },
   }),
   endpoints: (builder) => ({
     createCourse: builder.mutation({
@@ -18,27 +27,27 @@ export const courseApi = createApi({
       }),
       invalidatesTags: ["Refetch_Creator_Course"],
     }),
-    getSearchCourse:builder.query({
-      query: ({searchQuery, categories, sortByPrice}) => {
-        // Build qiery string
-        let queryString = `/search?query=${encodeURIComponent(searchQuery)}`
+    getSearchCourse: builder.query({
+      query: ({ searchQuery, categories, sortByPrice }) => {
+        // Build query string
+        let queryString = `/search?query=${encodeURIComponent(searchQuery ?? "")}`;
 
-        // append cateogry 
-        if(categories && categories.length > 0) {
+        // append category
+        if (categories && categories.length > 0) {
           const categoriesString = categories.map(encodeURIComponent).join(",");
-          queryString += `&categories=${categoriesString}`; 
+          queryString += `&categories=${categoriesString}`;
         }
 
-        // Append sortByPrice is available
-        if(sortByPrice){
-          queryString += `&sortByPrice=${encodeURIComponent(sortByPrice)}`; 
+        // Append sortByPrice if available
+        if (sortByPrice) {
+          queryString += `&sortByPrice=${encodeURIComponent(sortByPrice)}`;
         }
 
         return {
-          url:queryString,
-          method:"GET", 
-        }
-      }
+          url: queryString,
+          method: "GET",
+        };
+      },
     }),
     getPublishedCourse: builder.query({
       query: () => ({
@@ -66,6 +75,8 @@ export const courseApi = createApi({
         url: `/${courseId}`,
         method: "GET",
       }),
+      // so course detail can be invalidated/refetched when course changes
+      providesTags: ["Refetch_Creator_Course"],
     }),
     createLecture: builder.mutation({
       query: ({ lectureTitle, courseId }) => ({
@@ -73,6 +84,7 @@ export const courseApi = createApi({
         method: "POST",
         body: { lectureTitle },
       }),
+      invalidatesTags: ["Refetch_Lecture"],
     }),
     getCourseLecture: builder.query({
       query: (courseId) => ({
@@ -82,17 +94,13 @@ export const courseApi = createApi({
       providesTags: ["Refetch_Lecture"],
     }),
     editLecture: builder.mutation({
-      query: ({
-        lectureTitle,
-        videoInfo,
-        isPreviewFree,
-        courseId,
-        lectureId,
-      }) => ({
+      query: ({ lectureTitle, videoInfo, isPreviewFree, courseId, lectureId }) => ({
         url: `/${courseId}/lecture/${lectureId}`,
         method: "POST",
         body: { lectureTitle, videoInfo, isPreviewFree },
       }),
+      // ensure lists and course data refresh after editing a lecture
+      invalidatesTags: ["Refetch_Lecture", "Refetch_Creator_Course"],
     }),
     removeLecture: builder.mutation({
       query: (lectureId) => ({
@@ -112,9 +120,12 @@ export const courseApi = createApi({
         url: `/${courseId}?publish=${query}`,
         method: "PATCH",
       }),
+      // publishing changes course list/status
+      invalidatesTags: ["Refetch_Creator_Course"],
     }),
   }),
 });
+
 export const {
   useCreateCourseMutation,
   useGetSearchCourseQuery,

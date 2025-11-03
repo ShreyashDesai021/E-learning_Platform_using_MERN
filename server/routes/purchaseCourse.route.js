@@ -1,13 +1,25 @@
+// server/routes/purchaseCourse.route.js
 import express from "express";
 import isAuthenticated from "../middlewares/isAuthenticated.js";
-import { createCheckoutSession, getAllPurchasedCourse, getCourseDetailWithPurchaseStatus, stripeWebhook } from "../controllers/coursePurchase.controller.js";
+import {
+  createCheckoutSession,
+  getAllPurchasedCourse,
+  getCourseDetailWithPurchaseStatus,
+  stripeWebhook,
+} from "../controllers/coursePurchase.controller.js";
 
 const router = express.Router();
 
-router.route("/checkout/create-checkout-session").post(isAuthenticated, createCheckoutSession);
-router.route("/webhook").post(express.raw({type:"application/json"}), stripeWebhook);
-router.route("/course/:courseId/detail-with-status").get(isAuthenticated,getCourseDetailWithPurchaseStatus);
+// ⚠️ Webhook MUST use express.raw() BEFORE express.json() is applied globally
+router.post(
+  "/webhook",
+  express.raw({ type: "application/json" }),
+  stripeWebhook
+);
 
-router.route("/").get(isAuthenticated,getAllPurchasedCourse);
+// Authenticated routes (these use normal JSON parsing)
+router.post("/checkout/create-checkout-session", isAuthenticated, createCheckoutSession);
+router.get("/course/:courseId/detail-with-status", isAuthenticated, getCourseDetailWithPurchaseStatus);
+router.get("/", isAuthenticated, getAllPurchasedCourse);
 
 export default router;

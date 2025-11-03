@@ -1,3 +1,4 @@
+// client/src/pages/admin/lecture/EditLecture.jsx
 import { Button } from "@/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import React from "react";

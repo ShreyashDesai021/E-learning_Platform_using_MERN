@@ -1,3 +1,4 @@
+//client/src/components/BuyCourseButton.jsx
 import React, { useEffect } from "react";
 import { Button } from "./ui/button";
 import { useCreateCheckoutSessionMutation } from "@/features/api/purchaseApi";

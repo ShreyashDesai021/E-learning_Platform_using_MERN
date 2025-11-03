@@ -1,3 +1,4 @@
+//client/src/pages/student/SearchPage.jsx
 import React, { useState } from "react";
 import Filter from "./Filter";
 import SearchResult from "./SearchResult";

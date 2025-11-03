@@ -1,3 +1,4 @@
+// server/controllers/courseProgress.controller.js
 import { CourseProgress } from "../models/courseProgress.js";
 import { Course } from "../models/course.model.js";
 
@@ -31,7 +32,7 @@ export const getCourseProgress = async (req, res) => {
       });
     }
 
-    // Step-3 Return the user's course progress alog with course details
+    // Step-3 Return the user's course progress along with course details
     return res.status(200).json({
       data: {
         courseDetails,
@@ -40,7 +41,8 @@ export const getCourseProgress = async (req, res) => {
       },
     });
   } catch (error) {
-    console.log(error);
+    console.error("getCourseProgress error:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
@@ -63,8 +65,9 @@ export const updateLectureProgress = async (req, res) => {
     }
 
     // find the lecture progress in the course progress
+    // normalize IDs to strings for comparison (defensive)
     const lectureIndex = courseProgress.lectureProgress.findIndex(
-      (lecture) => lecture.lectureId === lectureId
+      (lecture) => String(lecture.lectureId) === String(lectureId)
     );
 
     if (lectureIndex !== -1) {
@@ -85,8 +88,9 @@ export const updateLectureProgress = async (req, res) => {
 
     const course = await Course.findById(courseId);
 
-    if (course.lectures.length === lectureProgressLength)
+    if (course && Array.isArray(course.lectures) && course.lectures.length === lectureProgressLength) {
       courseProgress.completed = true;
+    }
 
     await courseProgress.save();
 
@@ -94,7 +98,8 @@ export const updateLectureProgress = async (req, res) => {
       message: "Lecture progress updated successfully.",
     });
   } catch (error) {
-    console.log(error);
+    console.error("updateLectureProgress error:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
@@ -107,33 +112,35 @@ export const markAsCompleted = async (req, res) => {
     if (!courseProgress)
       return res.status(404).json({ message: "Course progress not found" });
 
-    courseProgress.lectureProgress.map(
+    courseProgress.lectureProgress.forEach(
       (lectureProgress) => (lectureProgress.viewed = true)
     );
     courseProgress.completed = true;
     await courseProgress.save();
     return res.status(200).json({ message: "Course marked as completed." });
   } catch (error) {
-    console.log(error);
+    console.error("markAsCompleted error:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
 export const markAsInCompleted = async (req, res) => {
-    try {
-      const { courseId } = req.params;
-      const userId = req.id;
-  
-      const courseProgress = await CourseProgress.findOne({ courseId, userId });
-      if (!courseProgress)
-        return res.status(404).json({ message: "Course progress not found" });
-  
-      courseProgress.lectureProgress.map(
-        (lectureProgress) => (lectureProgress.viewed = false)
-      );
-      courseProgress.completed = false;
-      await courseProgress.save();
-      return res.status(200).json({ message: "Course marked as incompleted." });
-    } catch (error) {
-      console.log(error);
-    }
-  };
+  try {
+    const { courseId } = req.params;
+    const userId = req.id;
+
+    const courseProgress = await CourseProgress.findOne({ courseId, userId });
+    if (!courseProgress)
+      return res.status(404).json({ message: "Course progress not found" });
+
+    courseProgress.lectureProgress.forEach(
+      (lectureProgress) => (lectureProgress.viewed = false)
+    );
+    courseProgress.completed = false;
+    await courseProgress.save();
+    return res.status(200).json({ message: "Course marked as incompleted." });
+  } catch (error) {
+    console.error("markAsInCompleted error:", error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+};
