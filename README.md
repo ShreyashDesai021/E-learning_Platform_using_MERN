@@ -52,7 +52,7 @@ A full-stack e-learning platform built with the MERN (MongoDB, Express.js, React
 - **MongoDB** - Database
 - **Mongoose** - ODM
 - **JWT** - Authentication
-- **Bcrypt.js** - Password hashing
+- **bcryptjs** - Password hashing
 - **Stripe** - Payment processing
 - **Cloudinary** - Media storage
 - **Multer** - File uploads
